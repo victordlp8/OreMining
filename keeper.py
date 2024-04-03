@@ -42,7 +42,10 @@ class Ore:
         command = f"ore --keypair {self.keypair} rewards"
         output: str = self.get_output(command)  # type: ignore
 
-        rewards = float(output.split()[0])
+        if output is not None:
+            rewards = float(output.split()[0])
+        else:
+            rewards = 0
         return rewards
 
 

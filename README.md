@@ -43,7 +43,7 @@ With Solana's congestion it is recommended to have at least some lamports of pri
 Finally change the number of threads to any number you want as long as it's lower than your maximum number of threads. The mining part is pretty CPU intensive and currently the main limitation is Solana's congestion on the validation part so I don't recommend spending all your threads but do as you wish, experiment with it.
 
 ### 7. Finally mining some ORE
-Just doble click or execute from the terminal the ``start.bat`` file or execute the ``keeper.py`` script using Python.
+Ensure you have some SOL on said wallet and just doble click or execute from the terminal the ``start.bat`` file or execute the ``keeper.py`` script using Python.
 
 Whenever you want to claim your ORE you should use this command and you will receive it to your wallet.
 ```
