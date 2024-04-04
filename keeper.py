@@ -1,6 +1,8 @@
 import configparser
+import time
 
 import subprocess
+import threading
 import os
 
 
@@ -9,21 +11,12 @@ class Ore:
         config = configparser.ConfigParser()
         config.read(config_path)
 
-        self.priority_fee = config.get("ORE", "priority_fee")
+        self.priority_fee = int(config.get("ORE", "priority_fee"))
         self.keypair = config.get("ORE", "keypair_path")
         self.rpc = config.get("ORE", "rpc")
-        self.threads = config.get("ORE", "threads")
-
-    def execute(self, command: str, stdout: bool):
-        if stdout:
-            process = subprocess.Popen(command, shell=True)
-        else:
-            with open(os.devnull, "w") as devnull:
-                process = subprocess.Popen(
-                    command, shell=True, stdout=devnull, stderr=devnull
-                )
-
-        process.wait()
+        self.threads = int(config.get("ORE", "threads"))
+        self.parallel_terminals = int(config.get("ORE", "parallel_terminals"))
+        self.terminal_phase = float(config.get("ORE", "terminal_phase"))
 
     def get_output(self, command: str) -> str | None:
         try:
@@ -36,7 +29,46 @@ class Ore:
 
     def mine(self):
         command = f"ore --keypair {self.keypair} --priority-fee {self.priority_fee} --rpc {self.rpc} mine --threads {self.threads}"
-        self.execute(command, False)
+
+        stdout = True
+
+        if stdout:
+            process = subprocess.Popen(command, shell=True)
+        else:
+            with open(os.devnull, "w") as devnull:
+                process = subprocess.Popen(
+                    command, shell=True, stdout=devnull, stderr=devnull
+                )
+
+        process.wait()
+
+    def parallel_mining(self):
+        results = []
+
+        def command():
+            path = os.getcwd()
+
+            command = f'start cmd /c "cd {path} & mode con: cols=45 lines=10 & '
+            command += f"ore --keypair {self.keypair} --priority-fee {self.priority_fee} --rpc {self.rpc} mine --threads {self.threads}"
+            command += ' & pause" /s'
+
+            process = subprocess.Popen(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+
+            stdout, stderr = process.communicate()
+            results.append([stdout, stderr])
+
+        threads = []
+        for _ in range(self.parallel_terminals):
+            t = threading.Thread(target=command)
+            threads.append(t)
+            t.start()
+
+            time.sleep(self.terminal_phase)
+
+        for t in threads:
+            t.join()
 
     def rewards(self):
         command = f"ore --keypair {self.keypair} rewards"
@@ -53,29 +85,16 @@ def main():
     ORE = Ore()
 
     initial_rewards = ORE.rewards()
-    previous_rewards = initial_rewards
-    print(f"Starting this mining session with {initial_rewards:06f} ORE")
+    print(f"Starting mining session with {initial_rewards:06f} ORE (To finish the process close every mining terminal)")
 
-    i, finish = 0, False
-    while not finish:
-        print(
-            f"\nMining Iteration {i + 1:03d} (MIs can be ended at any moment manually with Ctrl+C)"
-        )
-        try:
-            ORE.mine()
-            print(" --- MI ended")
+    try:
+        ORE.parallel_mining()
+        print(" --- Mining session ended")
 
-        except KeyboardInterrupt:
-            print(" --- Manually ending MI")
-            finish = True
+    except KeyboardInterrupt:
+        print(" --- Manually ending mining session")
 
-        rewards = ORE.rewards()
-        print(
-            f" --- Gained {rewards - previous_rewards:06f} ORE, totaling to {rewards:06f} ORE"
-        )
-        previous_rewards = rewards
-
-        i += 1
+    rewards = ORE.rewards()
 
     print(
         f"\nGained a total of {rewards - initial_rewards:06f} ORE in this session, totaling to {rewards:06f} ORE"
