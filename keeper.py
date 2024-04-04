@@ -1,4 +1,5 @@
 import configparser
+from tqdm import tqdm  # type: ignore
 import time
 
 import subprocess
@@ -15,8 +16,10 @@ class Ore:
         self.keypair = config.get("ORE", "keypair_path")
         self.rpc = config.get("ORE", "rpc")
         self.threads = int(config.get("ORE", "threads"))
-        self.parallel_terminals = int(config.get("ORE", "parallel_terminals"))
-        self.terminal_phase = float(config.get("ORE", "terminal_phase"))
+
+        self.parallel_miners = int(config.get("MINERS", "parallel_miners"))
+        self.miners_phase = float(config.get("MINERS", "miners_phase"))
+        self.miners_wave = int(config.get("MINERS", "miners_wave"))
 
     def get_output(self, command: str) -> str | None:
         try:
@@ -59,13 +62,19 @@ class Ore:
             stdout, stderr = process.communicate()
             results.append([stdout, stderr])
 
+        print("In 5 seconds miners will start deploying...")
+        time.sleep(5)
+
         threads = []
-        for _ in range(self.parallel_terminals):
+        for i in tqdm(range(self.parallel_miners), desc="Deploying miners", unit="m"):
             t = threading.Thread(target=command)
             threads.append(t)
             t.start()
 
-            time.sleep(self.terminal_phase)
+            if i != 0 and i % self.miners_wave == 0:
+                time.sleep(self.miners_phase)
+            else:
+                time.sleep(0.1)
 
         for t in threads:
             t.join()
@@ -85,11 +94,25 @@ def main():
     ORE = Ore()
 
     initial_rewards = ORE.rewards()
-    print(f"Starting mining session with {initial_rewards:06f} ORE (To finish the process close every mining terminal)")
+    previous_rewards = initial_rewards
+
+    print(
+        f"Starting mining session with {initial_rewards:06f} ORE (To finish the process close every mining terminal)"
+    )
+
+    ORE.parallel_mining()
 
     try:
-        ORE.parallel_mining()
-        print(" --- Mining session ended")
+        while True:
+            time.sleep(5 * 60)
+
+            rewards = ORE.rewards()
+
+            print(
+                f" --- Gained {rewards - previous_rewards:06f} ORE, totaling to {rewards:06f} ORE"
+            )
+
+            previous_rewards = rewards
 
     except KeyboardInterrupt:
         print(" --- Manually ending mining session")
