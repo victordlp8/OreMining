@@ -88,6 +88,20 @@ class Ore:
             rewards = 0
         return rewards
 
+    def force_claim(self):
+        rewards = self.rewards()
+
+        if rewards == 0:
+            print("You have no rewards to claim. Exiting.")
+        else:
+            print(f"Trying to claim {rewards:06f} ORE")
+
+        command = f"ore --keypair {self.keypair} --priority-fee {self.priority_fee} --rpc {self.rpc} claim"
+
+        while True:
+            output: str = self.get_output(command)  # type: ignore
+            print(output)
+
 
 def main():
     ORE = Ore()
