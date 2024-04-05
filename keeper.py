@@ -68,14 +68,15 @@ class Ore:
 
         threads = []
         for i in tqdm(range(self.parallel_miners), desc="Deploying miners", unit="m"):
-            t = threading.Thread(target=command)
-            threads.append(t)
-            t.start()
-
             if i != 0 and i % self.miners_wave == 0:
                 time.sleep(self.miners_phase)
             else:
                 time.sleep(0.1)
+                
+            t = threading.Thread(target=command)
+            threads.append(t)
+            t.start()
+
 
     def rewards(self):
         command = f"ore --keypair {self.keypair} rewards"
