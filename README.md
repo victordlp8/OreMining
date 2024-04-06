@@ -1,7 +1,7 @@
 # Welcome to how to easily mine some ORE tutorial
 
 ### What is ORE?
-Check its [explanation](https://ore.supply/what-is-mining), [tokenomics](https://ore.supply/ore-tokenomics) and its [X](https://twitter.com/OreSupply). But simply ORE is a token in the Solana blockchain that you can mine from your computer anywhere with any computational capability.
+Check its [explanation](https://ore.supply/what-is-mining), [tokenomics](https://ore.supply/ore-tokenomics) and its [Twitter](https://twitter.com/OreSupply). But simply ORE is a token in the Solana blockchain that you can mine from your computer anywhere with any computational capability.
 
 ## Where to start
 You can check their recommendations [here](https://ore.supply/download) but I'm gonna simplify those to you.
