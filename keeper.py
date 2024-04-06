@@ -1,5 +1,5 @@
 import configparser
-import pygetwindow as pygw # type: ignore
+import platform
 from tqdm import tqdm  # type: ignore
 import time
 
@@ -113,7 +113,10 @@ def main():
     initial_rewards = ORE.rewards()
     previous_rewards = initial_rewards
 
-    initial_windows = pygw.getAllWindows()
+    if platform.system() == "Windows":
+        import pygetwindow as pygw # type: ignore
+        
+        initial_windows = pygw.getAllWindows()
     
     print(
         f"Starting mining session with {initial_rewards:06f} ORE (To finish the process close every mining terminal)"
@@ -136,12 +139,13 @@ def main():
     except KeyboardInterrupt:
         print(" --- Manually ending mining session")
 
-        windows = pygw.getAllWindows()
-        
-        miners_windows = [window for window in windows if "cmd.exe" in window.title]
-        for window in miners_windows:
-            if window not in initial_windows:
-                window.close()
+        if platform.system() == "Windows":
+            windows = pygw.getAllWindows()
+            
+            miners_windows = [window for window in windows if "cmd.exe" in window.title]
+            for window in miners_windows:
+                if window not in initial_windows:
+                    window.close()
 
     rewards = ORE.rewards()
 
