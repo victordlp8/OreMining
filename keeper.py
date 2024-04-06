@@ -100,7 +100,11 @@ class Ore:
 
         while True:
             output: str = self.get_output(command)  # type: ignore
-            print(output)
+
+            success_msg = "Transaction landed!"
+            if success_msg in output:
+                print("Succesfully claimed your ORE!!!")
+                break
 
 
 def main():
