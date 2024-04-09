@@ -152,4 +152,4 @@ cython_debug/
 #.idea/
 
 # Custom
-ore_keypair.json
+keypairs_/
