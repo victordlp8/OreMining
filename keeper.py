@@ -17,7 +17,11 @@ class Ore:
 
         self.keypairs_path = config.get("ORE", "keypairs_path")
         if os.path.exists(self.keypairs_path):
-            self.keypairs = [os.path.join(self.keypairs_path, kp) for kp in os.listdir(self.keypairs_path)]
+            self.keypairs = []
+            for kp in os.listdir(self.keypairs_path):
+                if os.path.splitext(kp)[1] == ".json":
+                    self.keypairs.append(os.path.join(self.keypairs_path, kp)) 
+
             if not self.keypairs:
                 print("Keypairs folder is empty.")
         else:
