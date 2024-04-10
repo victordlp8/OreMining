@@ -83,8 +83,8 @@ class Ore:
         status_bar = tqdm(total=len(self.keypairs * self.parallel_miners), desc="Deploying miners", unit="m")
         i = 0
         threads = []
-        for keypair in self.keypairs:
-            for _ in range(self.parallel_miners):
+        for _ in range(self.parallel_miners):
+            for keypair in self.keypairs:
                 if i != 0 and i % self.miners_wave == 0:
                     time.sleep(self.miners_phase)
                 else:
@@ -156,7 +156,7 @@ def main():
         ORE.parallel_mining()
 
         while True:
-            time.sleep(5 * 60)
+            time.sleep(2 * 60)
 
             rewards = ORE.rewards_multiple()
 
