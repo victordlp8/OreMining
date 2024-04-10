@@ -30,7 +30,7 @@ class Ore:
             print(f"The provided path: {self.keypairs_path} does not exist.")
 
         self.rpc = config.get("ORE", "rpc")
-        self.rpc = self.rpc.split(", ")  # type: ignore
+        self.rpc = self.rpc.split(",")  # type: ignore
 
         self.threads = int(config.get("ORE", "threads"))
 
