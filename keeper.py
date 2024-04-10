@@ -30,6 +30,8 @@ class Ore:
             print(f"The provided path: {self.keypairs_path} does not exist.")
 
         self.rpc = config.get("ORE", "rpc")
+        self.rpc = self.rpc.split(", ")
+
         self.threads = int(config.get("ORE", "threads"))
 
         self.parallel_miners = int(config.get("MINERS", "parallel_miners"))
@@ -50,7 +52,7 @@ class Ore:
             return None
 
     def mine(self):
-        command = f"ore --keypair {self.keypairs} --priority-fee {self.priority_fee} --rpc {self.rpc} mine --threads {self.threads}"
+        command = f"ore --keypair {self.keypairs} --priority-fee {self.priority_fee} --rpc {self.rpc[0]} mine --threads {self.threads}"
 
         stdout = True
 
@@ -67,19 +69,19 @@ class Ore:
     def parallel_mining(self):
         results = []
 
-        def command(keypair, id):
+        def command(keypair, rpc, id):
             path = os.getcwd()
 
             command = f'start cmd /c "cd {path} & mode con: cols=45 lines=10 & title OMC Mining Instance {id:03d} & '
-            command += f"ore --keypair {keypair} --priority-fee {self.priority_fee} --rpc {self.rpc} mine --threads {self.threads}"
+            command += f"ore --keypair {keypair} --priority-fee {self.priority_fee} --rpc {rpc} mine --threads {self.threads}"
             command += ' & pause" /s'
 
-            process = subprocess.Popen(
-                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
+            # process = subprocess.Popen(
+            #     command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            # )
 
-            stdout, stderr = process.communicate()
-            results.append([stdout, stderr])
+            # stdout, stderr = process.communicate()
+            # results.append([stdout, stderr])
 
         print("In 5 seconds miners will start deploying...")
         time.sleep(5)
@@ -106,7 +108,9 @@ class Ore:
                 else:
                     time.sleep(0.1)
 
-                t = threading.Thread(target=command, args=(keypair, i + 1))
+                t = threading.Thread(
+                    target=command, args=(keypair, self.rpc[i % len(self.rpc)], i + 1)
+                )
                 threads.append(t)
                 t.start()
 
@@ -114,7 +118,7 @@ class Ore:
                 status_bar.update(1)
 
     def rewards(self, keypair):
-        command = f"ore --keypair {keypair} --rpc {self.rpc} rewards"
+        command = f"ore --keypair {keypair} --rpc {self.rpc[0]} rewards"
         output: str = self.get_output(command)  # type: ignore
 
         if output is not None:
@@ -141,7 +145,7 @@ class Ore:
             if self.rewards(keypair) == 0:
                 continue
 
-            command = f"ore --keypair {keypair} --priority-fee {self.priority_fee} --rpc {self.rpc} claim"
+            command = f"ore --keypair {keypair} --priority-fee {self.priority_fee} --rpc {self.rpc[0]} claim"
 
             while True:
                 output: str = self.get_output(command)  # type: ignore
