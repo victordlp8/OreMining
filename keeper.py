@@ -2,10 +2,12 @@ import configparser
 import platform
 from tqdm import tqdm  # type: ignore
 import time
+from datetime import datetime
 
 import subprocess
 import threading
 import os
+import psutil  # type: ignore
 
 
 class Ore:
@@ -20,7 +22,7 @@ class Ore:
             self.keypairs = []
             for kp in os.listdir(self.keypairs_path):
                 if os.path.splitext(kp)[1] == ".json":
-                    self.keypairs.append(os.path.join(self.keypairs_path, kp)) 
+                    self.keypairs.append(os.path.join(self.keypairs_path, kp))
 
             if not self.keypairs:
                 print("Keypairs folder is empty.")
@@ -34,7 +36,9 @@ class Ore:
         self.miners_phase = float(config.get("MINERS", "miners_phase"))
         self.miners_wave = int(config.get("MINERS", "miners_wave"))
 
-        subprocess.run("title OMC Controller", shell=True, capture_output=False, text=False)
+        subprocess.run(
+            "title OMC Controller", shell=True, capture_output=False, text=False
+        )
 
     def get_output(self, command: str) -> str | None:
         try:
@@ -80,23 +84,34 @@ class Ore:
         print("In 5 seconds miners will start deploying...")
         time.sleep(5)
 
-        status_bar = tqdm(total=len(self.keypairs * self.parallel_miners), desc="Deploying miners", unit="m")
+        status_bar = tqdm(
+            total=len(self.keypairs * self.parallel_miners),
+            desc="Deploying miners",
+            unit="m",
+        )
+
         i = 0
         threads = []
+
+        min_sleep = 3
+        min_cpu_usage = 35  # %
         for _ in range(self.parallel_miners):
             for keypair in self.keypairs:
                 if i != 0 and i % self.miners_wave == 0:
-                    time.sleep(self.miners_phase)
+                    time.sleep(min_sleep)
+                    for _ in range(max(0, int(self.miners_phase - min_sleep))):
+                        cpu_usage = psutil.cpu_percent(1)
+                        if cpu_usage <= min_cpu_usage:
+                            break
                 else:
                     time.sleep(0.1)
-                    
+
                 t = threading.Thread(target=command, args=(keypair, i + 1))
                 threads.append(t)
                 t.start()
 
                 i += 1
                 status_bar.update(1)
-
 
     def rewards(self, keypair):
         command = f"ore --keypair {keypair} --rpc {self.rpc} rewards"
@@ -107,7 +122,7 @@ class Ore:
         else:
             rewards = 0
         return rewards
-    
+
     def rewards_multiple(self):
         rewards = 0
         for keypair in self.keypairs:
@@ -143,11 +158,13 @@ def main():
     initial_rewards = ORE.rewards_multiple()
     previous_rewards = initial_rewards
 
+    start_time = time.time()
+
     if platform.system() == "Windows":
-        import pygetwindow as pygw # type: ignore
-        
+        import pygetwindow as pygw  # type: ignore
+
         initial_windows = pygw.getAllWindows()
-    
+
     print(
         f"Starting mining session with {initial_rewards:06f} ORE (Ctrl + C inside the OMC Controller to close all the OMC Mining Instances)"
     )
@@ -160,8 +177,13 @@ def main():
 
             rewards = ORE.rewards_multiple()
 
+            end_time = datetime.now()
+
+            minutes_elapsed = (end_time.timestamp() - start_time) / 60
+            rate = (rewards - initial_rewards) / minutes_elapsed
+
             print(
-                f" --- Gained {rewards - previous_rewards:06f} ORE, totaling to {rewards:06f} ORE"
+                f" --- [{end_time.strftime('%H:%M:%S')}] Gained {rewards - previous_rewards:06f} ORE | Total {rewards:06f} ORE | Rate {rate:06f} ORE/m {rate * 60:06f} ORE/h"
             )
 
             previous_rewards = rewards
@@ -170,11 +192,13 @@ def main():
         print(" --- Manually ending mining session")
 
         if platform.system() == "Windows":
-            windows = pygw.getAllWindows()
-            
-            miners_windows = [window for window in windows if "OMC Mining Instance" in window.title]
+            windows = pygw.getAllWindows()  # type: ignore
+
+            miners_windows = [
+                window for window in windows if "OMC Mining Instance" in window.title
+            ]
             for window in miners_windows:
-                if window not in initial_windows:
+                if window not in initial_windows:  # type: ignore
                     window.close()
 
     rewards = ORE.rewards_multiple()
