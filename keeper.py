@@ -30,7 +30,7 @@ class Ore:
             print(f"The provided path: {self.keypairs_path} does not exist.")
 
         self.rpc = config.get("ORE", "rpc")
-        self.rpc = self.rpc.split(", ")
+        self.rpc = self.rpc.split(", ")  # type: ignore
 
         self.threads = int(config.get("ORE", "threads"))
 
@@ -76,12 +76,12 @@ class Ore:
             command += f"ore --keypair {keypair} --priority-fee {self.priority_fee} --rpc {rpc} mine --threads {self.threads}"
             command += ' & pause" /s'
 
-            # process = subprocess.Popen(
-            #     command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            # )
+            process = subprocess.Popen(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
 
-            # stdout, stderr = process.communicate()
-            # results.append([stdout, stderr])
+            stdout, stderr = process.communicate()
+            results.append([stdout, stderr])
 
         print("In 5 seconds miners will start deploying...")
         time.sleep(5)
